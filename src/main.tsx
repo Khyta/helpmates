@@ -59,9 +59,10 @@ async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvi
   // Update level in Redis
   await context.redis.set(`user_level:${username}`, currentLevel.toString());
 
-  // Store the timestamp of the promotion/demotion
+  // Store the timestamp of the promotion/demotion AND the action performed
   const timestamp = Date.now();
   await context.redis.set(`user_last_action_time:${username}`, timestamp.toString());
+  await context.redis.set(`user_last_action:${username}`, action); // Store the action
 
   // Update user flair (using subreddit.flair.set from tutorial)
   const flairId = FLAIR_IDS_BY_LEVEL[currentLevel] || 'default-flair-id';
@@ -78,15 +79,24 @@ async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvi
 // Handle checking the last promotion/demotion time
 async function handleCheckLastAction(event: MenuItemOnPressEvent, context: Devvit.Context) {
   const { ui } = context;
-  const username = await getUsername(event, context);
 
-  const timestampStr = await context.redis.get(`user_last_action_time:${username}`);
-  if (timestampStr) {
-    const timestamp = parseInt(timestampStr);
-    const date = new Date(timestamp);
-    ui.showToast(`Last action for ${username} was on ${date.toLocaleString()}`);
-  } else {
-    ui.showToast(`No promotion/demotion history found for ${username}`);
+  try { 
+    const username = await getUsername(event, context);
+
+    const timestampStr = await context.redis.get(`user_last_action_time:${username}`);
+    const lastAction = await context.redis.get(`user_last_action:${username}`);
+
+    if (timestampStr) {
+      const timestamp = parseInt(timestampStr);
+      const date = new Date(timestamp);
+      ui.showToast(`Last action for ${username} was a ${lastAction} on ${date.toLocaleString()}`); 
+    } else {
+      ui.showToast(`No promotion/demotion history found for ${username}`);
+    }
+
+  } catch (error) {
+    console.error("Error in handleCheckLastAction:", error); // Log the error for debugging
+    ui.showToast("Something went wrong while checking the last action. Please try again later."); 
   }
 }
 
