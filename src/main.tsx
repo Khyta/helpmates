@@ -8,7 +8,6 @@ Devvit.configure({
 
 // Define Flair template ID and levels 
 const subreddit_name = '58E8LN7BP'
-const FLAIR_TEMPLATE_ID = 'your-flair-template-id';
 const FLAIR_IDS_BY_LEVEL: Record<number, string> = {
   0: '2a73bbd6-5caa-11ef-ad39-8ec6516befd2',
   1: '315a4640-5caa-11ef-a834-924e26908fa3',
@@ -64,8 +63,7 @@ async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvi
   const flairId = FLAIR_IDS_BY_LEVEL[currentLevel] || 'default-flair-id';
   const options = {
     username: username,
-    flair_template_id: FLAIR_TEMPLATE_ID,
-    flair_css_class: flairId,
+    flairTemplateId: flairId,
     subredditName: subreddit_name
   }
   await context.reddit.setUserFlair(options);
