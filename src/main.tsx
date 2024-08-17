@@ -6,7 +6,7 @@ Devvit.configure({
   redditAPI: true,
 });
 
-// Define Flair template ID and levels 
+// Define Flair template ID and levels
 const subreddit_name = '58E8LN7BP'
 const FLAIR_IDS_BY_LEVEL: Record<number, string> = {
   0: '2a73bbd6-5caa-11ef-ad39-8ec6516befd2',
@@ -15,18 +15,18 @@ const FLAIR_IDS_BY_LEVEL: Record<number, string> = {
   // Add more levels as needed
 };
 
-// Get username from event 
-async function getUsername(event: MenuItemOnPressEvent, context: Devvit.Context) {  
-  const { location, targetId } = event;  
-  const { reddit } = context;  
+// Get username from event
+async function getUsername(event: MenuItemOnPressEvent, context: Devvit.Context) {
+  const { location, targetId } = event;
+  const { reddit } = context;
   let thing;
 
-  if (location === 'post') {  
-    thing = await reddit.getPostById(targetId);  
-  } else if (location === 'comment') {  
-    thing = await reddit.getCommentById(targetId);  
+  if (location === 'post') {
+    thing = await reddit.getPostById(targetId);
+  } else if (location === 'comment') {
+    thing = await reddit.getCommentById(targetId);
   } else {
-    throw 'Cannot find a post or comment with that ID';  
+    throw 'Cannot find a post or comment with that ID';
   }
 
   const author = await reddit.getUserById(thing.authorId!);
@@ -39,22 +39,29 @@ async function getUserLevel(username: string, context: Devvit.Context) {
   return levelStr ? parseInt(levelStr) : 0;
 }
 
-// Handle promotion or demotion 
+// Handle promotion or demotion
 async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvit.Context, action: 'promote' | 'demote') {
   const { ui, reddit } = context;
   const username = await getUsername(event, context);
 
   let currentLevel = await getUserLevel(username, context);
 
-  if (action === 'promote') {
-    currentLevel++;
-  } else if (action === 'demote' && currentLevel > 0) {
-    currentLevel--;
-  }
-
-  // Ensure level is within valid range
+  // Ensure level is within valid range BEFORE modifying it
   const maxLevel = Math.max(...Object.keys(FLAIR_IDS_BY_LEVEL).map(Number));
-  currentLevel = Math.min(Math.max(currentLevel, 0), maxLevel);
+  const minLevel = 0; // Assuming the minimum level is 0
+
+  if (action === 'promote' && currentLevel < maxLevel) {
+    currentLevel++;
+  } else if (action === 'demote' && currentLevel > minLevel) {
+    currentLevel--;
+  } else {
+    // Handle cases where promotion/demotion is not possible
+    const message = action === 'promote'
+      ? "No more levels to promote to"
+      : "No more levels to demote to";
+    ui.showToast(message);
+    return; // Stop further execution
+  }
 
   // Update level in Redis
   await context.redis.set(`user_level:${username}`, currentLevel.toString());
@@ -64,7 +71,7 @@ async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvi
   await context.redis.set(`user_last_action_time:${username}`, timestamp.toString());
   await context.redis.set(`user_last_action:${username}`, action); // Store the action
 
-  // Update user flair (using subreddit.flair.set from tutorial)
+  // Update user flair
   const flairId = FLAIR_IDS_BY_LEVEL[currentLevel] || 'default-flair-id';
   const options = {
     username: username,
@@ -80,7 +87,7 @@ async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvi
 async function handleCheckLastAction(event: MenuItemOnPressEvent, context: Devvit.Context) {
   const { ui } = context;
 
-  try { 
+  try {
     const username = await getUsername(event, context);
 
     const timestampStr = await context.redis.get(`user_last_action_time:${username}`);
@@ -89,14 +96,14 @@ async function handleCheckLastAction(event: MenuItemOnPressEvent, context: Devvi
     if (timestampStr) {
       const timestamp = parseInt(timestampStr);
       const date = new Date(timestamp);
-      ui.showToast(`Last action for ${username} was a ${lastAction} on ${date.toLocaleString()}`); 
+      ui.showToast(`Last action for ${username} was a ${lastAction} on ${date.toLocaleString()}`);
     } else {
       ui.showToast(`No promotion/demotion history found for ${username}`);
     }
 
   } catch (error) {
     console.error("Error in handleCheckLastAction:", error); // Log the error for debugging
-    ui.showToast("Something went wrong while checking the last action. Please try again later."); 
+    ui.showToast("Something went wrong while checking the last action. Please try again later.");
   }
 }
 
