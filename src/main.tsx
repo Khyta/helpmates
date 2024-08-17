@@ -39,6 +39,27 @@ async function getUserLevel(username: string, context: Devvit.Context) {
   return levelStr ? parseInt(levelStr) : 0;
 }
 
+// Fetch flair text for a given flair template ID
+async function getFlairText(flairTemplateId: string, context: Devvit.Context): Promise<string | null> {
+  try {
+    const subreddit = await context.reddit.getSubredditByName(subreddit_name);
+    const flairTemplates = await subreddit.getUserFlairTemplates();
+    const flairTemplate = flairTemplates.find(template => template.id === flairTemplateId);
+
+    if (flairTemplate?.text) {
+      // Filter out emoji placeholders
+      const filteredText = flairTemplate.text.replace(/:[\w-]+:/g, ''); 
+      return filteredText;
+    } else {
+      return null;
+    }
+
+  } catch (error) {
+    console.error("Error fetching flair text:", error);
+    return null;
+  }
+}
+
 // Handle promotion or demotion
 async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvit.Context, action: 'promote' | 'demote') {
   const { ui, reddit } = context;
@@ -73,6 +94,8 @@ async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvi
 
   // Update user flair
   const flairId = FLAIR_IDS_BY_LEVEL[currentLevel] || 'default-flair-id';
+  const flairText = await getFlairText(flairId, context);
+
   const options = {
     username: username,
     flairTemplateId: flairId,
@@ -80,7 +103,7 @@ async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvi
   }
   await context.reddit.setUserFlair(options);
 
-  ui.showToast(`${action === 'promote' ? 'Promoted' : 'Demoted'} user ${username} to level ${currentLevel}`);
+  ui.showToast(`${action === 'promote' ? 'Promoted' : 'Demoted'} user ${username} to flair: ${flairText}`);
 }
 
 // Handle checking the last promotion/demotion time
