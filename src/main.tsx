@@ -59,6 +59,10 @@ async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvi
   // Update level in Redis
   await context.redis.set(`user_level:${username}`, currentLevel.toString());
 
+  // Store the timestamp of the promotion/demotion
+  const timestamp = Date.now();
+  await context.redis.set(`user_last_action_time:${username}`, timestamp.toString());
+
   // Update user flair (using subreddit.flair.set from tutorial)
   const flairId = FLAIR_IDS_BY_LEVEL[currentLevel] || 'default-flair-id';
   const options = {
@@ -69,6 +73,21 @@ async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvi
   await context.reddit.setUserFlair(options);
 
   ui.showToast(`${action === 'promote' ? 'Promoted' : 'Demoted'} user ${username} to level ${currentLevel}`);
+}
+
+// Handle checking the last promotion/demotion time
+async function handleCheckLastAction(event: MenuItemOnPressEvent, context: Devvit.Context) {
+  const { ui } = context;
+  const username = await getUsername(event, context);
+
+  const timestampStr = await context.redis.get(`user_last_action_time:${username}`);
+  if (timestampStr) {
+    const timestamp = parseInt(timestampStr);
+    const date = new Date(timestamp);
+    ui.showToast(`Last action for ${username} was on ${date.toLocaleString()}`);
+  } else {
+    ui.showToast(`No promotion/demotion history found for ${username}`);
+  }
 }
 
 // Add menu items
@@ -84,6 +103,14 @@ Devvit.addMenuItem({
   forUserType: 'moderator',
   label: 'Demote',
   onPress: (event, context) => handlePromoteOrDemote(event, context, 'demote'),
+});
+
+// New menu item for checking last action
+Devvit.addMenuItem({
+  location: 'comment',
+  forUserType: 'moderator',
+  label: 'Check Last Promotion/Demotion',
+  onPress: handleCheckLastAction,
 });
 
 export default Devvit;
