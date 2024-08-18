@@ -91,7 +91,6 @@ async function getFlairText(flairTemplateId: string, context: Devvit.Context): P
 }
 
 // Handle promotion or demotion (modified to use dynamic flair IDs)
-// Handle promotion or demotion (modified to use dynamic flair IDs)
 async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvit.Context, action: 'promote' | 'demote') {
   const { ui, reddit, settings } = context;
   const username = await getUsername(event, context);
@@ -137,8 +136,19 @@ async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvi
   }
   await context.reddit.setUserFlair(options);
 
+  // Add a mod note about the promotion/demotion
+  const noteText = `${action === 'promote' ? 'Promoted' : 'Demoted'} to flair: ${flairText}`;
+
+  await reddit.addModNote({
+    subreddit: subredditName,
+    user: username,
+    redditId: event.targetId, // Use T1ID for comment
+    note: noteText 
+  }); 
+
   ui.showToast(`${action === 'promote' ? 'Promoted' : 'Demoted'} user ${username} to flair: ${flairText}`);
 }
+
 
 // Handle checking the last promotion/demotion time 
 async function handleCheckLastAction(event: MenuItemOnPressEvent, context: Devvit.Context) {
