@@ -17,6 +17,9 @@ Devvit.addSettings([
     name: 'flair_ids_by_level',
     label: 'Enter a new flair ID on each new line',
     onValidate: (event) => {
+      if (event.value === undefined) {
+        return 'Please enter at least one flair ID.'; 
+      }
       const flairIds = event.value.split('\n');
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
