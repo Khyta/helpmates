@@ -1,4 +1,4 @@
-import { Devvit, MenuItemOnPressEvent, Subreddit, User } from '@devvit/public-api';
+import { Devvit, MenuItemOnPressEvent, SettingScope } from '@devvit/public-api';
 
 // Enable Redis and Reddit API plugins
 Devvit.configure({
@@ -6,16 +6,22 @@ Devvit.configure({
   redditAPI: true,
 });
 
-// Define Flair template ID and levels
-const subreddit_name = '58E8LN7BP'
-const FLAIR_IDS_BY_LEVEL: Record<number, string> = {
-  0: '2a73bbd6-5caa-11ef-ad39-8ec6516befd2',
-  1: '315a4640-5caa-11ef-a834-924e26908fa3',
-  2: '36fd250e-5caa-11ef-8cb8-2ebfbdd73cac'
-  // Add more levels as needed
-};
+// Define settings to store Subreddit name and Flair IDs dynamically
+Devvit.addSettings([
+  {
+    type: 'string',
+    name: 'subreddit_name',
+    label: 'Subreddit Name',
+  },
+  {
+    type: 'paragraph', 
+    name: 'flair_ids_by_level',
+    label: 'Enter a new flair ID on each new line',
+  },
+]);
 
-// Get username from event
+
+// Get username from event 
 async function getUsername(event: MenuItemOnPressEvent, context: Devvit.Context) {
   const { location, targetId } = event;
   const { reddit } = context;
@@ -33,21 +39,21 @@ async function getUsername(event: MenuItemOnPressEvent, context: Devvit.Context)
   return author.username;
 }
 
-// Get current user level from Redis
+// Get current user level from Redis 
 async function getUserLevel(username: string, context: Devvit.Context) {
   const levelStr = await context.redis.get(`user_level:${username}`);
   return levelStr ? parseInt(levelStr) : 0;
 }
 
-// Fetch flair text for a given flair template ID
+// Fetch flair text for a given flair template ID (modified to use dynamic subreddit name)
 async function getFlairText(flairTemplateId: string, context: Devvit.Context): Promise<string | null> {
   try {
-    const subreddit = await context.reddit.getSubredditByName(subreddit_name);
+    const subredditName = await context.settings.get('subreddit_name'); 
+    const subreddit = await context.reddit.getSubredditByName(subredditName);
     const flairTemplates = await subreddit.getUserFlairTemplates();
     const flairTemplate = flairTemplates.find(template => template.id === flairTemplateId);
 
     if (flairTemplate?.text) {
-      // Filter out emoji placeholders
       const filteredText = flairTemplate.text.replace(/:[\w-]+:/g, ''); 
       return filteredText;
     } else {
@@ -60,28 +66,31 @@ async function getFlairText(flairTemplateId: string, context: Devvit.Context): P
   }
 }
 
-// Handle promotion or demotion
+// Handle promotion or demotion (modified to use dynamic flair IDs)
+// Handle promotion or demotion (modified to use dynamic flair IDs)
 async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvit.Context, action: 'promote' | 'demote') {
-  const { ui, reddit } = context;
+  const { ui, reddit, settings } = context;
   const username = await getUsername(event, context);
-
   let currentLevel = await getUserLevel(username, context);
 
+  // Fetch flair IDs from settings and split by new line
+  const flairIdsByLevelString = await settings.get('flair_ids_by_level'); 
+  const flairIds = flairIdsByLevelString.split('\n').map(id => id.trim()); 
+
   // Ensure level is within valid range BEFORE modifying it
-  const maxLevel = Math.max(...Object.keys(FLAIR_IDS_BY_LEVEL).map(Number));
-  const minLevel = 0; // Assuming the minimum level is 0
+  const maxLevel = flairIds.length - 1; 
+  const minLevel = 0; 
 
   if (action === 'promote' && currentLevel < maxLevel) {
     currentLevel++;
   } else if (action === 'demote' && currentLevel > minLevel) {
     currentLevel--;
   } else {
-    // Handle cases where promotion/demotion is not possible
     const message = action === 'promote'
       ? "No more levels to promote to"
       : "No more levels to demote to";
     ui.showToast(message);
-    return; // Stop further execution
+    return; 
   }
 
   // Update level in Redis
@@ -90,23 +99,24 @@ async function handlePromoteOrDemote(event: MenuItemOnPressEvent, context: Devvi
   // Store the timestamp of the promotion/demotion AND the action performed
   const timestamp = Date.now();
   await context.redis.set(`user_last_action_time:${username}`, timestamp.toString());
-  await context.redis.set(`user_last_action:${username}`, action); // Store the action
+  await context.redis.set(`user_last_action:${username}`, action);
 
   // Update user flair
-  const flairId = FLAIR_IDS_BY_LEVEL[currentLevel] || 'default-flair-id';
+  const flairId = flairIds[currentLevel] || 'default-flair-id'; 
   const flairText = await getFlairText(flairId, context);
 
+  const subredditName = await context.settings.get('subreddit_name'); 
   const options = {
     username: username,
     flairTemplateId: flairId,
-    subredditName: subreddit_name
+    subredditName: subredditName 
   }
   await context.reddit.setUserFlair(options);
 
   ui.showToast(`${action === 'promote' ? 'Promoted' : 'Demoted'} user ${username} to flair: ${flairText}`);
 }
 
-// Handle checking the last promotion/demotion time
+// Handle checking the last promotion/demotion time 
 async function handleCheckLastAction(event: MenuItemOnPressEvent, context: Devvit.Context) {
   const { ui } = context;
 
@@ -125,12 +135,12 @@ async function handleCheckLastAction(event: MenuItemOnPressEvent, context: Devvi
     }
 
   } catch (error) {
-    console.error("Error in handleCheckLastAction:", error); // Log the error for debugging
+    console.error("Error in handleCheckLastAction:", error); 
     ui.showToast("Something went wrong while checking the last action. Please try again later.");
   }
 }
 
-// Add menu items
+// Add menu items 
 Devvit.addMenuItem({
   location: 'comment',
   forUserType: 'moderator',
