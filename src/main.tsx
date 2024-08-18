@@ -6,7 +6,6 @@ Devvit.configure({
   redditAPI: true,
 });
 
-// Define settings to store Subreddit name and Flair IDs dynamically
 Devvit.addSettings([
   {
     type: 'string',
@@ -17,6 +16,16 @@ Devvit.addSettings([
     type: 'paragraph', 
     name: 'flair_ids_by_level',
     label: 'Enter a new flair ID on each new line',
+    onValidate: (event) => {
+      const flairIds = event.value.split('\n');
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+      for (const flairId of flairIds) {
+        if (!uuidRegex.test(flairId.trim())) {
+          return 'Invalid flair ID format detected. Please ensure each flair ID is a valid UUID and is on a separate line.';
+        }
+      }
+    }
   },
 ]);
 
