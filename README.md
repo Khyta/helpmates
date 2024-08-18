@@ -24,3 +24,4 @@ The newline character `\n` is only there for illustrative purposes. The top-most
 
 - Demote/Promote users with the click of a button
 - Check when the last demotion/promotion happened for better management
+- Logs inside the mod note when a promotion/demotion happened with a link to the relevant comment
