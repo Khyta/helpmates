@@ -47,8 +47,20 @@ async function getUsername(event: MenuItemOnPressEvent, context: Devvit.Context)
     throw 'Cannot find a post or comment with that ID';
   }
 
-  const author = await reddit.getUserById(thing.authorId!);
-  return author.username;
+  // Check if authorId exists before proceeding
+  if (!thing.authorId) {
+    throw 'The post or comment does not have an authorId'; // Or handle it differently
+  }
+
+  const author = await reddit.getUserById(thing.authorId);
+
+  // Optional: Handle the case where author itself is undefined
+  if (!author) {
+    throw 'Could not find the author'; // Or handle it differently
+  }
+
+  // Provide a default value or handle the case where username is undefined
+  return author.username || '[deleted]'; 
 }
 
 // Get current user level from Redis 
