@@ -2,7 +2,7 @@
 
 This is an app for mods to manage promoting and demoting users in their subreddits. 
 
-## Configuration
+# Configuration
 
 Please input the subreddit name where the app is installed on. It's needed for the flair setting.
 
@@ -19,3 +19,8 @@ e7d26b3a-f019-4c53-832a-3d61f4b0c9e2\n
 ```
 
 The newline character `\n` is only there for illustrative purposes. The top-most flair will be counted as the lowest level that a user can be demoted to.
+
+# Features
+
+- Demote/Promote users with the click of a button
+- Check when the last demotion/promotion happened for better management
