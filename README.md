@@ -1,27 +1,25 @@
 # About
 
-This is an app for mods to manage promoting and demoting users in their subreddits. 
+This is an app for mods to manage promoting and demoting users using specific
+user flairs in their subreddits. The buttons to demote and promote users are for
+comments only.
 
 # Configuration
 
-Please input the subreddit name where the app is installed on. It's needed for the flair setting.
+Please input the subreddit name where the app is installed on. It's needed for
+the flair setting.
 
 The flair ID's need to be taken from the mod tools here: https://www.reddit.com/mod/SUBREDDITNAMEHERE/userflair.
 
-The flairs need to be each on their separate new line like this:
+The flairs need to be each on their separate new line. The ordering of the
+flairs is important as this will determine the progression of demoting/promoting
+the users. The highest and lowest tiers are indicated in the image.
 
-```
-69f740c1-3882-4006-9755-9386c59c317d\n
-b2a1e3f4-d5c6-4a7b-a8d3-0f1c7e0d4b2f\n
-03c8f9a5-1b2d-4e60-b7f1-a63e2c4d5f08\n
-e7d26b3a-f019-4c53-832a-3d61f4b0c9e2\n
-5a43c1d7-8e3f-42b9-91c0-7f2d3a1e6b5c\n
-```
-
-The newline character `\n` is only there for illustrative purposes. The top-most flair will be counted as the lowest level that a user can be demoted to.
+![A list of flairs with the lowest tier at the top and highest tier at the bottom. Each flair is separated by a new line](https://i.redd.it/u0vovlbd7dnd1.png)
 
 # Features
 
 - Demote/Promote users with the click of a button
 - Check when the last demotion/promotion happened for better management
-- Logs inside the mod note when a promotion/demotion happened with a link to the relevant comment
+- Logs inside the user notes when a promotion/demotion happened with a link to
+  the relevant comment
